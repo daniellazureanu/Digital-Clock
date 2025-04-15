@@ -2,6 +2,9 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#ifdef _WIN32_
+	#include <conio.h>
+#endif
 
 #define CLOCK_STARTING_COLUMN 30 //Where the clock is placed (COLUMN, ROW)
 #define CLOCK_STARTING_ROW 12
@@ -13,6 +16,8 @@
 
 void moveCursor();
 void hideCursor();
+void showCursor();
+void resetText();
 void printTimeUnit(int timeUnit, int& x, int& y);
 void printFirstDots(int& x, int& y);
 void printSecondDots(int& x, int& y);
@@ -119,9 +124,13 @@ int main() {
 
     int x = 0;
     int y = 0;
-
+#ifdef _WIN32
     system("chcp 65001");
+#endif
 
+#ifdef __linux
+    system("stty -echo");
+#endif
     clearScreen();
     hideCursor();
     changeColors(COLOR_ATTRIBUTE);
@@ -141,10 +150,19 @@ int main() {
 
         // Sleep until the next second
         now += std::chrono::seconds(1);
-        std::this_thread::sleep_until(now);  
+        std::this_thread::sleep_until(now);
+	#ifdef _WIN32_
+		if (_kbhit()){
+			char ch = _getch();
+			if(ch == 'q' || ch == 'Q'){
+				break;
+			}
+		}
+	#endif
     }
 
-    std::cout<<"\x1b[0m";
+    showCursor();
+    resetText();
     return 0;
 }
 
@@ -154,6 +172,14 @@ void moveCursor(int x, int y) {
 
 void hideCursor(){
     std::cout << "\033[?25l";
+}
+
+void showCursor(){
+	std::cout<<"\033[?25h";
+}
+
+void resetText(){
+	std::cout<<"\033[0m";
 }
 
 void printTimeUnit(int timeUnit, int& x, int& y){
@@ -192,29 +218,29 @@ void printTimeUnit(int timeUnit, int& x, int& y){
 }
 
 void printFirstDots(int& x, int& y){
-    x=CLOCK_STARTING_COLUMN + ASCII_DIGITS_COLUMNS*2+1;
-    y=CLOCK_STARTING_ROW;
-    moveCursor(x,y);
-    for (const auto& line : ascii_digits[DOTS_INDEX]) {
-        std::cout << line;
-        moveCursor(x,++y);
-    }
-    x=x+ASCII_DOTS_COLUMNS+1;
-    y=CLOCK_STARTING_ROW;
-    moveCursor(x,y);
+    	x=CLOCK_STARTING_COLUMN + ASCII_DIGITS_COLUMNS*2+1;
+    	y=CLOCK_STARTING_ROW;
+    	moveCursor(x,y);
+    	for (const auto& line : ascii_digits[DOTS_INDEX]) {
+        	std::cout << line;
+        	moveCursor(x,++y);
+    	}
+    	x=x+ASCII_DOTS_COLUMNS+1;
+    	y=CLOCK_STARTING_ROW;
+    	moveCursor(x,y);
 }
 
 void printSecondDots(int& x, int& y){
-    x=CLOCK_STARTING_COLUMN+ASCII_DIGITS_COLUMNS*2+1+ASCII_DOTS_COLUMNS+1+ASCII_DIGITS_COLUMNS*2+1;
-    y=CLOCK_STARTING_ROW;
-    moveCursor(x,y);
-    for (const auto& line : ascii_digits[DOTS_INDEX]) {
-        std::cout << line;
-        moveCursor(x,++y);
-    }
-    x=x+ASCII_DOTS_COLUMNS+1;
-    y=CLOCK_STARTING_ROW;
-    moveCursor(x,y);
+    	x=CLOCK_STARTING_COLUMN+ASCII_DIGITS_COLUMNS*2+1+ASCII_DOTS_COLUMNS+1+ASCII_DIGITS_COLUMNS*2+1;
+    	y=CLOCK_STARTING_ROW;
+    	moveCursor(x,y);
+    	for (const auto& line : ascii_digits[DOTS_INDEX]) {
+        	std::cout << line;
+       	 	moveCursor(x,++y);
+    	}
+    	x=x+ASCII_DOTS_COLUMNS+1;
+    	y=CLOCK_STARTING_ROW;
+    	moveCursor(x,y);
 }
 
 void printCurrentTime(int hour, int minute, int second, int x, int y){
@@ -230,11 +256,19 @@ void printCurrentTime(int hour, int minute, int second, int x, int y){
 }
 
 void clearScreen(){
-    std::cout << "\033[2J\033[H";  
+#ifdef _WIN32
+    	std::cout << "\033[2J\033[H";
+#elif __linux__
+    	system("clear");
+#endif  
 }
 
 void changeColors(const std::string& colorAttribute) {
-    system(("color " + colorAttribute).c_str());
+#ifdef _WIN32
+	system(("color " + colorAttribute).c_str());
+#elif __linux__
+	std::cout<<"\033[32m";
+#endif
 }
 
 /*METADA FOR THIS FONT 
